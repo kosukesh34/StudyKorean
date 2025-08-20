@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct QuizView: View {
+    @StateObject private var progressManager = StudyProgressManager()
+    @StateObject private var speechManager = SpeechManager()
     @State private var quizWords: [KoreanWord] = []
     @State private var currentQuestionIndex = 0
     @State private var selectedAnswer: String? = nil
@@ -15,6 +17,7 @@ struct QuizView: View {
     @State private var correctAnswers = 0
     @State private var isQuizFinished = false
     @State private var selectedCategory: KoreanWord.WordCategory = .greetings
+    @State private var selectedMasteryLevel: WordMastery.MasteryLevel? = nil
     @State private var quizSize = 10
     
     private let quizSizes = [5, 10, 15, 20]
@@ -97,6 +100,23 @@ struct QuizView: View {
                     .cornerRadius(10)
                 }
                 
+                // 習熟度フィルター
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("習熟度")
+                        .font(.headline)
+                    
+                    Picker("習熟度", selection: $selectedMasteryLevel) {
+                        Text("すべて").tag(nil as WordMastery.MasteryLevel?)
+                        ForEach(WordMastery.MasteryLevel.allCases, id: \.self) { level in
+                            Text(level.rawValue).tag(level as WordMastery.MasteryLevel?)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(10)
+                }
+                
                 // 問題数選択
                 VStack(alignment: .leading, spacing: 10) {
                     Text("問題数")
@@ -158,10 +178,24 @@ struct QuizView: View {
                         .font(.headline)
                         .foregroundColor(.secondary)
                     
-                    Text(question.korean)
-                        .font(.system(size: 48, weight: .medium))
-                        .foregroundColor(.primary)
-                        .multilineTextAlignment(.center)
+                    HStack {
+                        Text(question.korean)
+                            .font(.system(size: 48, weight: .medium))
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.center)
+                        
+                        // 音声再生ボタン
+                        Button(action: {
+                            speechManager.speakKorean(question.korean)
+                        }) {
+                            Image(systemName: speechManager.isSpeaking ? "speaker.wave.2.fill" : "speaker.wave.2")
+                                .font(.title2)
+                                .foregroundColor(.blue)
+                                .scaleEffect(speechManager.isSpeaking ? 1.2 : 1.0)
+                                .animation(.easeInOut(duration: 0.3), value: speechManager.isSpeaking)
+                        }
+                        .disabled(!speechManager.isAvailable)
+                    }
                     
                     Text(question.pronunciation)
                         .font(.system(size: 18, weight: .medium))
@@ -293,8 +327,17 @@ struct QuizView: View {
     }
     
     private func startQuiz() {
-        let categoryWords = KoreanWordData.words(for: selectedCategory)
-        quizWords = Array(categoryWords.shuffled().prefix(min(quizSize, categoryWords.count)))
+        var availableWords = KoreanWordData.words(for: selectedCategory)
+        
+        // 習熟度フィルターを適用
+        if let masteryLevel = selectedMasteryLevel {
+            availableWords = availableWords.filter { word in
+                guard let mastery = progressManager.wordMasteries[word.id] else { return false }
+                return mastery.masteryLevel == masteryLevel
+            }
+        }
+        
+        quizWords = Array(availableWords.shuffled().prefix(min(quizSize, availableWords.count)))
         currentQuestionIndex = 0
         correctAnswers = 0
         selectedAnswer = nil
@@ -303,9 +346,19 @@ struct QuizView: View {
     }
     
     private func nextQuestion() {
-        if selectedAnswer == currentQuestion?.japanese {
+        guard let question = currentQuestion else { return }
+        
+        let isCorrect = selectedAnswer == question.japanese
+        if isCorrect {
             correctAnswers += 1
         }
+        
+        // 進捗を記録
+        progressManager.recordStudyResult(
+            wordId: question.id,
+            isCorrect: isCorrect,
+            studyType: .quiz
+        )
         
         if currentQuestionIndex < quizWords.count - 1 {
             currentQuestionIndex += 1

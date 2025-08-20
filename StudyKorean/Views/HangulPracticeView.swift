@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct HangulPracticeView: View {
+    @StateObject private var speechManager = SpeechManager()
     @State private var currentCharacterIndex = 0
     @State private var selectedType: KoreanCharacter.CharacterType = .consonant
     @State private var showPronunciation = false
@@ -30,7 +31,7 @@ struct HangulPracticeView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
+            VStack(spacing: 30) {
                 // タイプ選択
                 Picker("文字種類", selection: $selectedType) {
                     ForEach(KoreanCharacter.CharacterType.allCases, id: \.self) { type in
@@ -40,11 +41,44 @@ struct HangulPracticeView: View {
                 .pickerStyle(SegmentedPickerStyle())
                 .padding(.horizontal)
                 .onChange(of: selectedType) { _ in
+                    currentCharacterIndex = 0
                     showPronunciation = false
                 }
                 
-                // 表示オプション
-                HStack {
+                // 進行状況
+                VStack {
+                    Text("\(currentCharacterIndex + 1) / \(currentCharacters.count)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    ProgressView(value: Double(currentCharacterIndex + 1), total: Double(currentCharacters.count))
+                        .padding(.horizontal, 20)
+                }
+                
+                Spacer()
+                
+                // メインカード
+                VStack(spacing: 20) {
+                    // ハングル文字
+                    HStack {
+                        Text(currentCharacter.korean)
+                            .font(.system(size: 120, weight: .medium, design: .default))
+                            .foregroundColor(.primary)
+                        
+                        // 音声再生ボタン
+                        Button(action: {
+                            speechManager.speakKorean(currentCharacter.korean)
+                        }) {
+                            Image(systemName: speechManager.isSpeaking ? "speaker.wave.2.fill" : "speaker.wave.2")
+                                .font(.title)
+                                .foregroundColor(.blue)
+                                .scaleEffect(speechManager.isSpeaking ? 1.2 : 1.0)
+                                .animation(.easeInOut(duration: 0.3), value: speechManager.isSpeaking)
+                        }
+                        .disabled(!speechManager.isAvailable)
+                    }
+                    
+                    // 発音表示ボタン
                     Button(action: {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             showPronunciation.toggle()
@@ -54,34 +88,63 @@ struct HangulPracticeView: View {
                             Image(systemName: showPronunciation ? "eye.slash" : "eye")
                             Text(showPronunciation ? "発音を隠す" : "発音を表示")
                         }
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.blue)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
                         .background(Color.blue.opacity(0.1))
-                        .cornerRadius(15)
+                        .cornerRadius(20)
+                    }
+                    
+                    // 発音表示
+                    if showPronunciation {
+                        Text(currentCharacter.pronunciation)
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .transition(.opacity.combined(with: .scale))
                     }
                 }
-                .padding(.horizontal)
-                
-                // ハングル一覧表示（全文表示）
-                ScrollView {
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 15) {
-                        ForEach(currentCharacters) { character in
-                            HangulCard(
-                                character: character,
-                                showPronunciation: showPronunciation
-                            )
-                        }
-                    }
-                    .padding(.horizontal)
-                }
+                .frame(maxWidth: .infinity)
+                .padding(40)
+                .background(Color(.systemBackground))
+                .cornerRadius(20)
+                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                .padding(.horizontal, 20)
                 
                 Spacer()
+                
+                // ナビゲーションボタン
+                HStack(spacing: 20) {
+                    Button(action: previousCharacter) {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                            Text("前へ")
+                        }
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 30)
+                        .padding(.vertical, 12)
+                        .background(currentCharacterIndex > 0 ? Color.blue : Color.gray)
+                        .cornerRadius(25)
+                    }
+                    .disabled(currentCharacterIndex <= 0)
+                    
+                    Button(action: nextCharacter) {
+                        HStack {
+                            Text("次へ")
+                            Image(systemName: "chevron.right")
+                        }
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 30)
+                        .padding(.vertical, 12)
+                        .background(currentCharacterIndex < currentCharacters.count - 1 ? Color.blue : Color.gray)
+                        .cornerRadius(25)
+                    }
+                    .disabled(currentCharacterIndex >= currentCharacters.count - 1)
+                }
+                .padding(.bottom, 30)
             }
             .navigationTitle("ハングル練習")
             .navigationBarTitleDisplayMode(.large)
@@ -105,36 +168,6 @@ struct HangulPracticeView: View {
                 showPronunciation = false
             }
         }
-    }
-}
-
-struct HangulCard: View {
-    let character: KoreanCharacter
-    let showPronunciation: Bool
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            // ハングル文字
-            Text(character.korean)
-                .font(.system(size: 48, weight: .medium, design: .default))
-                .foregroundColor(.primary)
-            
-            // 発音
-            if showPronunciation {
-                Text(character.pronunciation)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .transition(.opacity.combined(with: .scale))
-            }
-        }
-        .frame(height: showPronunciation ? 120 : 100)
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(15)
-        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
     }
 }
 

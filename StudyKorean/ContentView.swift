@@ -16,23 +16,29 @@ struct ContentView: View {
                     Text("ホーム")
                 }
             
-            LanguageLearningView()
+            HangulPracticeView()
                 .tabItem {
-                    Image(systemName: "character.book.closed")
-                    Text("文字練習")
+                    Image(systemName: "textformat.abc")
+                    Text("ハングル練習")
                 }
             
-            WordStudyView()
+            AdvancedWordStudyView()
                 .tabItem {
                     Image(systemName: "book.fill")
                     Text("単語学習")
                 }
             
-            QuizMainView()
-                .tabItem {
-                    Image(systemName: "questionmark.circle.fill")
-                    Text("クイズ")
-                }
+                                    QuizView()
+                            .tabItem {
+                                Image(systemName: "questionmark.circle.fill")
+                                Text("クイズ")
+                            }
+                        
+                        SentenceStudyView()
+                            .tabItem {
+                                Image(systemName: "text.bubble.fill")
+                                Text("長文学習")
+                            }
         }
         .accentColor(.blue)
     }
@@ -45,18 +51,13 @@ struct HomeView: View {
                 VStack(spacing: 30) {
                     // ヘッダー
                     VStack(spacing: 10) {
-                        Text("多言語学習アプリ")
+                        Text("韓国語学習アプリ")
                             .font(.largeTitle)
                             .fontWeight(.bold)
                         
-                        VStack(spacing: 5) {
-                            Text("한국어 공부하자!")
-                                .font(.title3)
-                                .foregroundColor(.blue)
-                            Text("学习中文吧!")
-                                .font(.title3)
-                                .foregroundColor(.red)
-                        }
+                        Text("한국어 공부하자!")
+                            .font(.title2)
+                            .foregroundColor(.blue)
                     }
                     .padding(.top, 20)
                     
@@ -66,9 +67,9 @@ struct HomeView: View {
                         GridItem(.flexible())
                     ], spacing: 20) {
                         FeatureCard(
-                            icon: "character.book.closed",
-                            title: "文字練習",
-                            description: "ハングル・漢字を\n一つずつ学習",
+                            icon: "textformat.abc",
+                            title: "ハングル練習",
+                            description: "基本文字を\n一つずつ学習",
                             color: .purple
                         )
                         
@@ -101,34 +102,18 @@ struct HomeView: View {
                             .font(.headline)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
-                        VStack(spacing: 15) {
-                            HStack(spacing: 20) {
-                                StatCard(
-                                    title: "ハングル文字",
-                                    value: "\(KoreanCharacterData.allCharacters.count)",
-                                    subtitle: "文字"
-                                )
-                                
-                                StatCard(
-                                    title: "韓国語単語",
-                                    value: "\(KoreanWordData.words.count)",
-                                    subtitle: "単語"
-                                )
-                            }
+                        HStack(spacing: 20) {
+                            StatCard(
+                                title: "ハングル文字",
+                                value: "\(KoreanCharacterData.allCharacters.count)",
+                                subtitle: "文字"
+                            )
                             
-                            HStack(spacing: 20) {
-                                StatCard(
-                                    title: "漢字",
-                                    value: "\(ChineseCharacterData.characters.count)",
-                                    subtitle: "文字"
-                                )
-                                
-                                StatCard(
-                                    title: "中国語カテゴリ",
-                                    value: "\(ChineseCharacter.CharacterCategory.allCases.count)",
-                                    subtitle: "分類"
-                                )
-                            }
+                            StatCard(
+                                title: "韓国語単語",
+                                value: "\(KoreanWordData.words.count)",
+                                subtitle: "単語"
+                            )
                         }
                     }
                     .padding(.horizontal, 20)
@@ -136,7 +121,7 @@ struct HomeView: View {
                     Spacer(minLength: 50)
                 }
             }
-            .navigationTitle("多言語学習")
+            .navigationTitle("韓国語学習")
             .navigationBarTitleDisplayMode(.inline)
             .background(Color(.systemGroupedBackground))
         }
