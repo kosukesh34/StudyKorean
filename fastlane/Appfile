@@ -1,0 +1,5 @@
+app_identifier("com.IDNect.StudyKorean")
+team_id("T29T2L39T5")
+
+# App Store ConnectのApple ID(メール)は必要なら環境変数で指定
+# apple_id(ENV["FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD"])

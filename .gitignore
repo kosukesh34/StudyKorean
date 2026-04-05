@@ -1,0 +1,10 @@
+# Bundler（Gem は Gemfile.lock で再現する）
+/vendor/bundle/
+
+# Xcode ユーザー固有
+xcuserdata/
+*.xcuserstate
+
+# Fastlane / ローカルビルド成果物
+build/
+fastlane/report.xml
